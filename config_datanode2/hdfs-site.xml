@@ -1,0 +1,35 @@
+<configuration>
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>/data/namenode</value>
+  </property>
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>/data/datanode</value>
+  </property>
+  <property>
+    <name>dfs.replication</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>dfs.datanode.hostname</name>
+    <value>datanode2</value>
+  </property>
+  <property>
+    <name>dfs.datanode.address</name>
+    <value>datanode2:50010</value>
+  </property>
+  <property>
+    <name>dfs.datanode.http.address</name>
+    <value>datanode2:50075</value>
+  </property>
+  <property>
+    <name>dfs.datanode.uid</name>
+    <value>0</value>
+  </property>
+  <property>
+    <name>dfs.datanode.gid</name>
+    <value>0</value>
+  </property>
+</configuration>
+

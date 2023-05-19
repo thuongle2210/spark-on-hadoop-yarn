@@ -1,0 +1,163 @@
+version: '2'
+services:
+  namenode:
+    build: .
+    hostname: namenode # Replace with your desired hostname
+    ports:
+      - 50070:50070
+      - 9000:9000 
+      - 9870:9870 #hdfs
+      - 8080:8080
+    volumes: # remember delete folder data before docker-compose up -d --build
+      - ./data/namenode_data:/data
+      - ./start-node:/start-node
+      - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
+      - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./config_namenode/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
+      - ./config_namenode/slaves:/opt/hadoop/etc/hadoop/slaves
+      - ./config_namenode/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./config_namenode/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./config_namenode/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml
+      - ./config_namenode/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml
+      - ./spark-apps/write_to_hdfs.py:/write_to_hdfs.py
+      #- ./config_namenode/*:/opt/hadoop/etc/hadoop/
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop/
+    #command: ["bash", "/start-ssh.sh"]
+    #command: "/opt/hadoop/etc/hadoop/start-namenode.sh"
+  datanode1:
+    build: .
+    hostname: datanode1 # Replace with your desired hostname
+    ports:
+      - 19864:9864
+      - 50011:50010
+      - 50076:50075
+      - 18042:8042
+      - 18088:8088
+    volumes:
+      - ./data/datanode1_data:/data
+      - ./start-node:/start-node
+      - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
+      - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./config_datanode1/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
+      - ./config_datanode1/slaves:/opt/hadoop/etc/hadoop/slaves
+      - ./config_datanode1/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./config_datanode1/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./config_datanode1/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml
+      - ./config_datanode1/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml
+      #- ./config_datanode1/*:/opt/hadoop/etc/hadoop/
+    depends_on:
+      - namenode
+    #command: "/opt/hadoop/etc/hadoop/start-datanode.sh"
+
+  datanode2:
+    build: .
+    hostname: datanode2 # Replace with your desired hostname
+    ports:
+      - 29864:9864
+      - 50012:50010
+      - 50077:50075
+      - 28042:8042
+      - 28088:8088
+    volumes:
+      - ./data/datanode2_data:/data
+      - ./start-node:/start-node
+      - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
+      - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./config_datanode2/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
+      - ./config_datanode2/slaves:/opt/hadoop/etc/hadoop/slaves
+      - ./config_datanode2/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./config_datanode2/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./config_datanode2/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml
+      - ./config_datanode2/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml
+      #- ./config_datanode2/*:/opt/hadoop/etc/hadoop/
+    depends_on:
+      - namenode
+  datanode3:
+    build: .
+    hostname: datanode3 # Replace with your desired hostname
+    ports:
+      - 39864:9864
+      - 50013:50010
+      - 50078:50075
+      - 38042:8042
+      - 38088:8088
+    volumes:
+      - ./data/datanode3_data:/data
+      - ./start-node:/start-node
+      - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
+      - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./config_datanode3/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
+      - ./config_datanode3/slaves:/opt/hadoop/etc/hadoop/slaves
+      - ./config_datanode3/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./config_datanode3/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./config_datanode3/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml
+      - ./config_datanode3/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml
+      #- ./config_datanode2/*:/opt/hadoop/etc/hadoop/
+    depends_on:
+      - namenode
+
+  resourcemanager:
+    build: .
+    hostname: resourcemanager # Replace with your desired hostname
+    ports:
+      - 8088:8088 #resource manager Webapp
+      - 8032:8032
+      - 8030:8030
+      - 19888:19888 #history server
+      - 18080:18080 #spark history server
+      - 4040:4040   #driver's web UI
+      
+    volumes: # remember delete folder data before docker-compose up -d --build
+      - ./start-node:/start-node
+      - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
+      - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./config_resourcemanager/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
+      - ./config_resourcemanager/slaves:/opt/hadoop/etc/hadoop/slaves
+      - ./config_resourcemanager/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./config_resourcemanager/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./config_resourcemanager/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml
+      - ./config_resourcemanager/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml
+      - ./spark-apps/write_to_hdfs.py:/write_to_hdfs.py
+      - ./fifa:/fifa
+    environment:
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop/
+    #command: "/opt/hadoop/etc/hadoop/start-datanode.sh"
+  # resourcemanager:
+  #   build: .
+  #   hostname: resourcemanager # Replace with your desired hostname
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   expose:
+  #     - "8088"
+  #   #command: "/opt/hadoop/etc/hadoop/start-resourcemanager.sh"
+
+  # nodemanager1:
+  #   build: .
+  #   hostname: nodemanager1 # Replace with your desired hostname
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - resourcemanager
+  #   expose:
+  #     - "8042"
+  #   volumes:
+  #     - ./data/nodemanager1:/opt/hadoop/logs
+  #   #command: "/opt/hadoop/etc/hadoop/start-nodemanager.sh"
+
+  # nodemanager2:
+  #   build: .
+  #   hostname: nodemanager2 # Replace with your desired hostname
+  #   depends_on:
+  #     - namenode
+  #     - datanode2
+  #     - resourcemanager
+  #   expose:
+  #     - "8042"
+  #   volumes:
+  #     - ./data/nodemanager2:/opt/hadoop/logs
+  #   #command: "/opt/hadoop/etc/hadoop/start-nodemanager.sh"
+

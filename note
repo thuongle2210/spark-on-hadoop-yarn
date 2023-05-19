@@ -1,0 +1,50 @@
+--conf spark.executor.instances=<NUMBER OF EXECUTORS> : số lượng executor cho spark application
+
+spark.yarn.am.nodeLabelExpression = "namenode": application master sẽ run ở namenode
+spark.yarn.executor.nodeLabelExpression = "datanode1,datanode2"
+
+
+bin/pyspark --deploy-mode client --num-executors 2 --executor-memory 1g --executor-cores 1 --conf spark.yarn.am.nodeLabelExpression="namenode",spark.yarn.executor.nodeLabelExpression="datanode1,datanode2"
+
+bin/pyspark --deploy-mode client --num-executors 2 --executor-memory 1g --executor-cores 1 --conf spark.executor.instances=2
+
+bin/spark-submit --deploy-mode cluster --num-executors 2 --executor-memory 1g --executor-cores 1 --conf spark.executor.instances=2
+
+bin/pyspark --deploy-mode client --num-executors 3 --executor-memory 1g --executor-cores 1
+
+
+select 
+    male_teams.team_name, male_players.short_name as player_short_name, male_players.long_name as player_long_name, 
+    male_coaches.short_name as coach_short_name, male_coaches.long_name as coach_long_name, 
+    male_players.overall as player_overall, male_teams.overall as team_overall
+from male_teams, male_coaches, male_players
+where
+    male_teams.overall = (select max(male_teams.overall) from male_teams)
+    and
+    male_players.overall = (select max(male_players.overall) from male_players)
+    and     
+    male_players.club_team_id = male_teams.team_id 
+    and
+    male_coaches.coach_id = male_teams.coach_id
+
+
+
+
+select 
+    male_teams.team_name, male_players.short_name as player_short_name, male_players.long_name as player_long_name, 
+    male_players.overall as player_overall, male_teams.overall as team_overall,
+    male_players.fifa_version as player_fifa_version,
+    male_teams.fifa_version as team_fifa_version
+from male_teams, male_players
+where
+    male_teams.overall = (select max(male_teams.overall) from male_teams)
+    and
+    male_players.overall = (select max(male_players.overall) from male_players)
+    and     
+    male_players.club_team_id = male_teams.team_id
+    and 
+    male_players.fifa_version = male_teams.fifa_version
+
+
+
+male_players_group_by_club_unix_ts=male_players_df.filter("fifa_update_date<='2020-01-01' and fifa_update_date>='2015-01-01'").groupby('club_position').agg(avg('overall'))
