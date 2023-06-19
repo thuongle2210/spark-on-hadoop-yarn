@@ -8,11 +8,14 @@ services:
       - 9000:9000 
       - 9870:9870 #hdfs
       - 8080:8080
+      - 10000:10000
+      - 9083:9083
     volumes: # remember delete folder data before docker-compose up -d --build
       - ./data/namenode_data:/data
       - ./start-node:/start-node
       - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
       - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./hive_config/hive-site.xml:/opt/hive/conf/hive-site.xml
       - ./config_namenode/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
       - ./config_namenode/slaves:/opt/hadoop/etc/hadoop/slaves
       - ./config_namenode/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
@@ -40,6 +43,7 @@ services:
       - ./start-node:/start-node
       - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
       - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./hive_config/hive-site.xml:/opt/hive/conf/hive-site.xml
       - ./config_datanode1/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
       - ./config_datanode1/slaves:/opt/hadoop/etc/hadoop/slaves
       - ./config_datanode1/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
@@ -65,6 +69,7 @@ services:
       - ./start-node:/start-node
       - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
       - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./hive_config/hive-site.xml:/opt/hive/conf/hive-site.xml
       - ./config_datanode2/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
       - ./config_datanode2/slaves:/opt/hadoop/etc/hadoop/slaves
       - ./config_datanode2/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
@@ -88,6 +93,7 @@ services:
       - ./start-node:/start-node
       - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
       - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./hive_config/hive-site.xml:/opt/hive/conf/hive-site.xml
       - ./config_datanode3/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
       - ./config_datanode3/slaves:/opt/hadoop/etc/hadoop/slaves
       - ./config_datanode3/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
@@ -113,16 +119,28 @@ services:
       - ./start-node:/start-node
       - ./spark_config/spark-defaults.conf.template:/opt/spark/conf/spark-defaults.conf #.template
       - ./spark_config/slaves:/opt/spark/conf/slaves
+      - ./hive_config/hive-site.xml:/opt/hive/conf/hive-site.xml
       - ./config_resourcemanager/hadoop-env.sh:/opt/hadoop/etc/hadoop/hadoop-env.sh
       - ./config_resourcemanager/slaves:/opt/hadoop/etc/hadoop/slaves
       - ./config_resourcemanager/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
       - ./config_resourcemanager/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
       - ./config_resourcemanager/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml
       - ./config_resourcemanager/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml
-      - ./spark-apps/write_to_hdfs.py:/write_to_hdfs.py
+      - ./spark-apps:/spark-apps
       - ./fifa:/fifa
     environment:
       - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop/
+  metastore:
+    image: postgres:11
+    hostname: metastore
+    environment:
+      # POSTGRES_USER: thuong
+      POSTGRES_PASSWORD: thuong   
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./ddl/init.sql:/docker-entrypoint-initdb.d/init.sql
+    #  - ./metastore:/var/lib/postgresql/data
     #command: "/opt/hadoop/etc/hadoop/start-datanode.sh"
   # resourcemanager:
   #   build: .

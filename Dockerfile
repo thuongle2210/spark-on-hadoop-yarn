@@ -1,8 +1,12 @@
-FROM ubuntu:latest
-
+FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND noninteractive
+#ENV http_proxy 'http://mainproxy.ucm.conti.de:8980'
+#ENV https_proxy 'https://mainproxy.ucm.conti.de:8980'
 # Install necessary dependencies
-RUN apt-get update && apt-get install -y wget curl tar sudo ssh openssh-server rsync
-
+RUN apt-get update -y && apt-get install -y wget curl tar sudo ssh openssh-server rsync
+#RUN apt-get update
+#RUN apt-get install -y wget
+#RUN apt-get install curl tar sudo ssh openssh-server rsync
 # Download and extract Hadoop
 RUN wget http://mirror.olnevhost.net/pub/apache/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz && \
     tar -xzvf hadoop-3.3.1.tar.gz && \
@@ -90,4 +94,21 @@ ln -sf /dev/stdout $SPARK_WORKER_LOG
 
 #expose port hadoop and spark
 expose 9870 8088 9864 8080 9000 8032 50010 8042 19888 18080 4040 35371 43351 8888 33457
+
+# setup hive
+WORKDIR /opt
+ARG HIVE_VERSION=3.1.3
+ARG HIVE_URL=https://archive.apache.org/dist/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz
+RUN wget $HIVE_URL
+RUN tar xzf apache-hive-$HIVE_VERSION-bin.tar.gz
+RUN mv apache-hive-$HIVE_VERSION-bin hive
+ENV HIVE_HOME=/opt/hive
+ENV HIVE_CONF_DIR=$HIVE_HOME/conf
+ENV PATH=$HIVE_HOME/sbin:$HIVE_HOME/bin:$PATH
+ENV HADOOP_VERSION=3.3.1
+WORKDIR /opt/spark/jars
+RUN wget https://jdbc.postgresql.org/download/postgresql-42.3.2.jar
+WORKDIR /opt
+expose 10000 9083
+
 CMD ["tail", "-f" ,"/dev/null"]
