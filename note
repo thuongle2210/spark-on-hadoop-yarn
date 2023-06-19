@@ -9,9 +9,9 @@ bin/pyspark --deploy-mode client --num-executors 2 --executor-memory 1g --execut
 bin/pyspark --deploy-mode client --num-executors 2 --executor-memory 1g --executor-cores 1 --conf spark.executor.instances=2
 
 bin/spark-submit --deploy-mode cluster --num-executors 2 --executor-memory 1g --executor-cores 1 --conf spark.executor.instances=2
-
+bin/spark-submit --deploy-mode cluster --num-executors 2 --executor-memory 1g --executor-cores 1
 bin/pyspark --deploy-mode client --num-executors 3 --executor-memory 1g --executor-cores 1
-
+bin/pyspark --deploy-mode client --num-executors 1 --executor-memory 1g --executor-cores 1
 
 select 
     male_teams.team_name, male_players.short_name as player_short_name, male_players.long_name as player_long_name, 
@@ -48,3 +48,93 @@ where
 
 
 male_players_group_by_club_unix_ts=male_players_df.filter("fifa_update_date<='2020-01-01' and fifa_update_date>='2015-01-01'").groupby('club_position').agg(avg('overall'))
+
+create table dacthuong (id int, value varchar, updated_at timestamp);
+
+id, value, updated_at
+1, 'xoai', '2023-01-01 00:00:00'
+2, 'cam', '2023-01-01 00:00:01'
+3, 'tao', '2023-01-01 00:00:01'
+2, 'chuoi', '2023-01-01 00:00:02'
+
+
+insert into dacthuong(id, value, updated_at) values (1, 'xoai', '2023-01-01 00:00:00'), 
+(2, 'cam', '2023-01-01 00:00:01'), 
+(3, 'tao', '2023-01-01 00:00:01'),
+(2, 'chuoi', '2023-01-01 00:00:02');
+
+id, value, updated_at
+5, 'chomchom', '2023-01-01 00:00:02'
+3, 'man', '2023-01-01 00:00:03'
+1, 'dao', '2023-01-02 00:00:04'
+3, 'vai', '2023-01-02 00:00:05'
+
+insert into dacthuong(id, value, updated_at) values (5, 'chomchom', '2023-01-01 00:00:02'),
+(3, 'man', '2023-01-01 00:00:03'),
+(1, 'dao', '2023-01-02 00:00:04'),
+(3, 'vai', '2023-01-02 00:00:05')
+
+
+result_df = target_df.alias('t').join(
+    deduplicate_latest_record_df.alias('d'),
+    target_df.id == deduplicate_latest_record_df.id,
+    'full'
+).select(
+    coalesce("d.id", "t.id").alias("id"),
+    "t.*"
+)
+
+
+# check target table is exists or not
+query = f"SHOW TABLES IN {target_database} LIKE '{target_table}'"
+is_target_exists = spark.sql(query).count() > 0
+# get max updated_at
+if is_target_exists is True:
+    # get target dataframe
+    spark.sql(f"CREATE OR REPLACE TEMPORARY VIEW target_table AS SELECT * FROM {target_database}.{target_table}")
+    #spark.table(f"{target_database}.{target_table}").createOrReplaceTempView("target_table")
+    target_df = spark.sql("select * from target_table");
+    max_updated_at = spark.sql(f"select max(updated_at) as max_updated_at from target_table").first()['max_updated_at']
+# Define PostgreSQL connection properties
+# get source dataframe
+jdbc_url = f"jdbc:postgresql://metastore:5432/{source_database}"
+connection_properties = {
+    "user": "thuong",
+    "password": "thuong",
+    "driver": "org.postgresql.Driver"
+}
+df = spark.read.jdbc(url=jdbc_url, table=source_table, properties=connection_properties)
+# add extract_date column
+ingestion_date_string = ingestion_date.strftime("%Y-%m-%d") 
+# append or overwrite data from postgresql to hive
+if is_target_exists is False:
+    latest_record_df = df
+else:
+    latest_record_df = df.filter(df["updated_at"] >= max_updated_at)
+# deduplicate row in latest record
+window_spec = Window.partitionBy("id").orderBy(col("updated_at").desc())
+deduplicate_latest_record_df = latest_record_df.withColumn("rank", row_number().over(window_spec)) \
+          .filter("rank = 1").drop("rank")
+# merge distinct latest record to exists table in hive
+
+if is_target_exists is True:
+        result_df = target_df.alias('t').join(
+            deduplicate_latest_record_df.alias('d'),
+            target_df.id == deduplicate_latest_record_df.id,
+            'full'
+        ).select(
+            #coalesce("d.id", "t.id").alias("id"),
+            "t.*"
+        )
+        spark.catalog.dropTempView("target_table")
+        # write result_df to hive table
+        result_df.createOrReplaceTempView("temptable")
+
+
+
+latest_record_df.createOrReplaceTempView("temptable")
+spark.sql(f"insert overwrite table {target_database}.{target_table} select * from temptable")
+
+
+spark.sql(f"ALTER TABLE {target_table}._temp RENAME TO {target_table}")
+result_df.write.mode("overwrite").mode("overwrite").saveAsTable(f"{target_database}.{target_table}")
